@@ -1,25 +1,29 @@
 # cit
 
-> Git-style account switching for Claude Code.
+> Git-style context switching for Claude Code.
 
-`cit` is a local-first CLI for saving, inspecting, and switching Claude Code accounts on macOS. It treats account state like a lightweight git workflow: you can create named profiles, switch between them, stash the current state, preview changes before applying them, and inspect local usage history.
+`cit` is a local-first CLI for saving, inspecting, and switching Claude work contexts on macOS. A context bundles Claude account identity, model choice, MCP defaults, and related local switching state into a reusable workflow unit. Today, those contexts are stored as named profiles on disk.
 
 ## Why `cit` exists
 
-Claude Code stores one active identity across multiple places:
+Claude Code stores one active work context across multiple places:
 
 - the macOS Keychain entry for Claude credentials
 - `~/.claude.json` for account metadata
 - `~/.claude/settings.json` and `~/.claude/.mcp.json` for behavior and MCP defaults
 
-Switching between a personal plan and a work account usually means manual exports, file edits, and a high chance of ending up in a half-switched state. `cit` turns that into a repeatable local workflow with safety rails.
+Switching between a personal context and a work context usually means manual exports, file edits, and a high chance of ending up in a half-switched state. `cit` turns that into a repeatable local workflow with safety rails.
+
+> **Terminology note**
+>
+> In product language, `cit` manages **contexts**. In the current implementation, a saved context is stored as a named **profile** on disk.
 
 ## Highlights
 
 - **Git-style mental model** — `branch`, `checkout`, `stash`, `log`
 - **Atomic switching** — file lock + write-ahead log recovery around checkout
 - **Safe previews** — `cit checkout <name> --dry-run` shows what would change before mutating anything
-- **Profile-aware configuration** — merge per-profile model, permission mode, and MCP settings on checkout
+- **Context-aware configuration** — merge per-context model, permission mode, and MCP settings on checkout
 - **Local session visibility** — inspect Claude session usage and estimated token cost from local JSONL files
 - **Coverage-enforced development** — the repository fails tests below 80% total coverage for `cit`
 
@@ -35,10 +39,10 @@ python3 -m venv .venv
 ### Try the core workflow
 
 ```bash
-# Inspect the current Claude account state
+# Inspect the current Claude context
 ./.venv/bin/cit status
 
-# Save the current state as a named profile
+# Save the current context as a named profile
 ./.venv/bin/cit branch personal --with-config
 
 # Preview a switch before applying it
@@ -64,11 +68,11 @@ No files were changed.
 
 | Command | Purpose |
 | --- | --- |
-| `cit branch` | Save, list, and remove named Claude account profiles |
-| `cit checkout` | Switch to a saved profile, switch back, or preview a switch |
-| `cit status` | Print the active account, subscription, model, and stash state |
-| `cit config` | Manage global and per-profile defaults |
-| `cit stash` | Save and restore temporary account snapshots |
+| `cit branch` | Save, list, and remove named Claude contexts stored as profiles |
+| `cit checkout` | Switch to a saved context, switch back, or preview a switch |
+| `cit status` | Print the active context summary, identity details, model, and stash state |
+| `cit config` | Manage global and per-context defaults stored on profiles |
+| `cit stash` | Save and restore temporary context snapshots |
 | `cit log` | Inspect local Claude session usage and estimated cost |
 
 ## How it works
@@ -126,12 +130,12 @@ docs/             Detailed design notes and implementation references
 - `checkout` uses a file lock to avoid concurrent mutations
 - write operations are protected by `wal.json` so interrupted switches can be recovered
 - dry-run previews never mutate Keychain, state, or Claude files
-- current state can be auto-stashed before a switch when changes are detected
-- profile and stash snapshots are stored with private filesystem permissions
+- current context state can be auto-stashed before a switch when changes are detected
+- profile-backed context snapshots and stash entries are stored with private filesystem permissions
 
 ## Configuration
 
-`cit` resolves configuration in this order:
+`cit` resolves context configuration in this order:
 
 1. built-in defaults
 2. `[global]` values in `~/.cit/config.toml`
@@ -184,10 +188,10 @@ args = ["@anthropic/memory-mcp"]
 
 Implemented today:
 
-- profile save/list/delete flows
-- checkout with WAL-backed atomic switching
+- profile-backed context save/list/delete flows
+- context checkout with WAL-backed atomic switching
 - checkout dry-run preview
-- stash stack management
+- context stash management
 - profile-scoped config resolution and MCP merging
 - local session usage logging with estimated cost
 - branded CLI help and examples
@@ -202,7 +206,7 @@ Implemented today:
 Contributions should keep the project local-first, predictable, and safe.
 
 - keep repository-authored content in English
-- preserve or improve the safety model around switching
+- preserve or improve the safety model around context switching
 - add tests for behavior changes
 - keep the total `cit` package coverage at or above 80%
 

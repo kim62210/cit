@@ -22,16 +22,16 @@ ASCII_BANNER = r"""
 ░╚════╝░╚═╝░░░╚═╝░░░
 """.strip("\n")
 
-HELP_SUMMARY = "Git-style account switching for Claude Code."
+HELP_SUMMARY = "Git-style context switching for Claude Code."
 HELP_DETAILS = (
-    "Save reusable profiles, switch accounts cleanly, and confirm the active "
-    "setup without digging through local files."
+    "Manage reusable Claude work contexts where account identity is only one "
+    "part of the local state."
 )
 QUICK_START = (
     "Quick start:\n"
-    "  cit status                     Inspect the active account and profile.\n"
-    "  cit branch work --with-config  Save the current account as a reusable profile.\n"
-    "  cit checkout office            Switch to a saved work profile.\n"
+    "  cit status                     Inspect the active context and identity details.\n"
+    "  cit branch work --with-config  Save the current context as a reusable named profile.\n"
+    "  cit checkout office            Switch to a saved work context.\n"
     "  cit log --today --stats        Review today's session usage and cost."
 )
 

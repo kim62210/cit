@@ -17,7 +17,7 @@ def test_branch_saves_and_lists_profiles(runner, env_paths, monkeypatch):
     list_result = runner.invoke(main, ["branch", "-v"])
 
     assert save_result.exit_code == 0
-    assert "Saved current account as work" in save_result.output
+    assert "Saved the current context as work" in save_result.output
     assert list_result.exit_code == 0
     assert "active@example.com" in list_result.output
     assert "team (tier)" in list_result.output

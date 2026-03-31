@@ -8,12 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Added a Phase 1 context-first product positioning spec and execution plan under `docs/superpowers/`.
 - Added a custom block-style ASCII hero banner to the main CLI help screen.
 - Added `cit checkout --dry-run` to preview account, settings, MCP, auto-stash, and warning changes before applying a switch.
 - Added regression coverage for CLI help output and dry-run preview behavior.
 
 ### Changed
 
+- Reframed product documentation and CLI help around Claude work contexts while keeping `profile` as the current storage term.
 - Refined the main `cit --help` experience with clearer command summaries and quick-start examples.
 - Improved checkout planning so the same switch computation can drive both preview output and real execution.
 

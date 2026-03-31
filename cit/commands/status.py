@@ -22,8 +22,8 @@ def _format_expiry(epoch_ms: int | None) -> str:
 
 
 @click.command(
-    help="Show the active profile, account details, model, and stash status.",
-    short_help="Show the active account status.",
+    help="Show the active context summary, identity details, model, and stash status.",
+    short_help="Show the active context summary.",
 )
 @click.option("--short", "short_output", is_flag=True, help="Show one-line summary")
 def status(short_output: bool) -> None:

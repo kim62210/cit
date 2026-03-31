@@ -15,8 +15,8 @@ from cit.core.state import read_state
 
 
 @click.command(
-    help="Inspect and update global or per-profile cit configuration.",
-    short_help="Manage cit configuration.",
+    help="Inspect and update global or per-context cit configuration stored on profiles.",
+    short_help="Manage global and per-context defaults.",
 )
 @click.option("--list", "list_values", is_flag=True, help="List config values")
 @click.option("--global", "global_scope", is_flag=True, help="Use global scope")

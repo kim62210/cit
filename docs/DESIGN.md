@@ -1,16 +1,16 @@
 # cit — Design Specification v1.0
 
-> **cit** (Claude + git) — A git-style CLI for managing Claude Code accounts
+> **cit** (Claude + git) — A git-style CLI for managing Claude work contexts
 
 ## 1. Project Overview
 
 ### 1.1 What is cit?
 
-`cit` is a command-line tool for managing multiple Claude Code accounts and profiles on a single machine. It borrows git's mental model — branches, checkout, stash — to make account switching feel natural to developers who already think in git terms.
+`cit` is a command-line tool for managing reusable Claude work contexts on a single machine. It borrows git's mental model — branches, checkout, stash — to make context switching feel natural to developers who already think in git terms. In the current implementation, saved contexts are stored as named profiles.
 
 ### 1.2 Motivation
 
-Claude Code stores exactly one active account across three distinct locations:
+Claude Code stores exactly one active work context across three distinct locations:
 
 | Location | What it stores |
 |----------|---------------|
@@ -18,7 +18,14 @@ Claude Code stores exactly one active account across three distinct locations:
 | `~/.claude.json` → `oauthAccount` field | accountUuid, emailAddress, organizationUuid, displayName, billingType, orgRole |
 | `~/.claude/settings.json` | model preference, hooks, plugins, MCP servers (shared across accounts today) |
 
-Switching between a personal Max subscription and a work Team subscription requires manually exporting/importing Keychain entries and editing JSON files. `cit` automates this entirely.
+Switching between a personal Max subscription and a work Team subscription requires manually exporting/importing Keychain entries and editing JSON files. `cit` automates this as part of a broader local context switching workflow.
+
+### 1.2.1 Terminology
+
+- **Context** — the top-level product concept; a reusable Claude working setup
+- **Profile** — the current stored form of a saved context on disk
+- **Session** — a live or historical Claude run associated with local usage
+- **Account** — one identity facet within a context
 
 ### 1.3 Non-Goals (MVP)
 
@@ -34,7 +41,7 @@ Switching between a personal Max subscription and a work Team subscription requi
 
 ### 2.1 `cit branch`
 
-List, create, and delete account profiles.
+List, create, and delete named profiles that store reusable Claude contexts.
 
 ```bash
 cit branch                     # List all profiles (* = active)
@@ -57,7 +64,7 @@ cit branch -v                  # Verbose: show email, org, subscription, rateLim
 
 ### 2.2 `cit checkout <name>`
 
-Switch to a saved profile.
+Switch to a saved Claude context stored as a profile.
 
 ```bash
 cit checkout <name>            # Switch to profile
@@ -79,7 +86,7 @@ cit checkout -                 # Switch to previous profile (like `cd -`)
 
 ### 2.3 `cit status`
 
-Display current account state.
+Display the active context summary, including account identity details.
 
 ```bash
 cit status                     # Full status
@@ -109,7 +116,7 @@ Stash:         1 entry
 
 ### 2.4 `cit config`
 
-Per-profile and global configuration.
+Per-context and global configuration.
 
 ```bash
 cit config <key> <value>           # Set for current profile
@@ -136,7 +143,7 @@ cit config --unset <key>           # Remove key from current profile
 
 ### 2.5 `cit stash` / `cit stash pop`
 
-Temporarily save and restore account state.
+Temporarily save and restore context state.
 
 ```bash
 cit stash                       # Push current state onto stash stack
@@ -156,7 +163,7 @@ stash@{1}: auto: pre-checkout from personal [1h ago]
 
 ### 2.6 `cit log`
 
-Session history with token usage.
+Session history with token usage, shown alongside local context workflows.
 
 ```bash
 cit log                         # Recent sessions (default: last 20)

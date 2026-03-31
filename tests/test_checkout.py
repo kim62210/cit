@@ -37,7 +37,7 @@ def test_checkout_switches_profile_and_updates_state(runner, env_paths, monkeypa
     result = runner.invoke(main, ["checkout", "office"])
 
     assert result.exit_code == 0
-    assert "Switched to profile 'office'" in result.output
+    assert "Switched to context 'office'" in result.output
     state = read_state()
     assert state["activeProfile"] == "office"
     assert state["previousProfile"] == "personal"

@@ -14,8 +14,8 @@ from cit.core.state import read_state
 
 @click.command(
     context_settings={"ignore_unknown_options": True},
-    help="Save, list, and remove named account profiles.",
-    short_help="Save, list, and remove named account profiles.",
+    help="Save, list, and remove named Claude contexts stored as profiles.",
+    short_help="Save, list, and remove named Claude contexts stored as profiles.",
 )
 @click.argument("name", required=False)
 @click.option("-d", "delete_name", default=None, help="Delete profile")
@@ -36,7 +36,7 @@ def branch(
     if name:
         with cit_lock():
             save_current_profile(name, with_config=with_config)
-        click.echo(f"Saved current account as {name}")
+        click.echo(f"Saved the current context as {name}")
         return
     for profile_name in list_profiles():
         marker = "*" if profile_name == active else " "

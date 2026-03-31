@@ -11,7 +11,7 @@ from cit.core.session_reader import read_sessions
 
 @click.command(
     name="log",
-    help="Show Claude session history with usage and cost summaries.",
+    help="Show Claude session history and usage summaries alongside local context work.",
     short_help="Show session history and token usage.",
 )
 @click.option("--today", "today_only", is_flag=True, help="Show only today's sessions")

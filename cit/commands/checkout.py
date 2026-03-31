@@ -153,8 +153,8 @@ def _render_checkout_plan(plan: dict[str, Any]) -> str:
 
 
 @click.command(
-    help="Switch to a saved profile or create one before switching.",
-    short_help="Switch to a saved profile.",
+    help="Switch the active Claude work context or create one before switching.",
+    short_help="Switch to a saved Claude context.",
 )
 @click.option(
     "-b",
@@ -177,7 +177,7 @@ def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
                 raise click.ClickException("--dry-run cannot be used with -b")
             save_current_profile(create_name, with_config=True)
             set_active_profile(create_name, current)
-            click.echo(f"Switched to a new profile '{create_name}'")
+            click.echo(f"Switched to a new context stored as profile '{create_name}'")
             return
         if name is None:
             raise click.ClickException("A profile name is required")
@@ -227,4 +227,4 @@ def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
         except Exception as error:
             recover_if_needed()
             raise click.ClickException(str(error)) from error
-        click.echo(f"Switched to profile '{name}'")
+        click.echo(f"Switched to context '{name}'")

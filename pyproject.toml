@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cit-cli"
 version = "0.1.0"
-description = "A git-style CLI for managing Claude Code accounts"
+description = "A git-style CLI for managing Claude work contexts"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
