@@ -103,6 +103,19 @@ def list_profile_config(profile_name: str | None) -> dict[str, Any]:
     return resolve_config(profile_name)
 
 
+def checkout_overrides(
+    profile_name: str | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    resolved = resolve_config(profile_name)
+    settings_overrides: dict[str, Any] = {}
+    mcp_overrides = resolved.get("mcp", {})
+    if "model" in resolved:
+        settings_overrides["model"] = resolved["model"]
+    if "permission-mode" in resolved:
+        settings_overrides["permission-mode"] = resolved["permission-mode"]
+    return settings_overrides, mcp_overrides
+
+
 def _coerce_value(key: str, value: str) -> Any:
     if key == "auto-stash":
         return value.lower() in {"1", "true", "yes", "on"}
