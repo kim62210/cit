@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import click
 
+from cit.core.lock import cit_lock
 from cit.core.profile import (
     delete_profile,
     list_profiles,
@@ -24,11 +25,13 @@ def branch(
     state = read_state()
     active = state.get("activeProfile")
     if delete_name:
-        delete_profile(delete_name)
+        with cit_lock():
+            delete_profile(delete_name)
         click.echo(f"Deleted profile {delete_name}")
         return
     if name:
-        save_current_profile(name, with_config=with_config)
+        with cit_lock():
+            save_current_profile(name, with_config=with_config)
         click.echo(f"Saved current account as {name}")
         return
     for profile_name in list_profiles():

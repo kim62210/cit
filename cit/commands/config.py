@@ -10,6 +10,7 @@ from cit.core.config_manager import (
     set_config_value,
     unset_config_value,
 )
+from cit.core.lock import cit_lock
 from cit.core.state import read_state
 
 
@@ -35,7 +36,8 @@ def config(
     if unset_key:
         if not active_profile:
             raise click.ClickException("No active profile")
-        unset_config_value(unset_key, active_profile)
+        with cit_lock():
+            unset_config_value(unset_key, active_profile)
         click.echo(f"Unset {unset_key}")
         return
     if key is None:
@@ -44,5 +46,6 @@ def config(
         current = get_config_value(key, active_profile)
         click.echo(json.dumps(current) if isinstance(current, dict) else current)
         return
-    set_config_value(key, value, active_profile, global_scope=global_scope)
+    with cit_lock():
+        set_config_value(key, value, active_profile, global_scope=global_scope)
     click.echo(f"Set {key}")

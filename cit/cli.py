@@ -8,12 +8,14 @@ from cit.commands.config import config
 from cit.commands.log import log_command
 from cit.commands.stash import stash
 from cit.commands.status import status
+from cit.core.lock import cit_lock
 from cit.core.wal import recover_if_needed
 
 
 @click.group()
 def main() -> None:
-    recover_if_needed()
+    with cit_lock():
+        recover_if_needed()
 
 
 main.add_command(branch)

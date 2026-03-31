@@ -7,6 +7,7 @@ import click
 
 from cit.core import keychain
 from cit.core.claude_files import merge_mcp, merge_settings, patch_oauth_account
+from cit.core.lock import cit_lock
 from cit.core.profile import create_stash_entry, delete_stash_entry, load_stash_entry
 from cit.core.state import pop_stash_id, push_stash_id, read_state
 
@@ -22,8 +23,9 @@ def _get_stash_id(index: int) -> str:
 @click.pass_context
 def stash(ctx: click.Context) -> None:
     if ctx.invoked_subcommand is None:
-        stash_id = create_stash_entry(message="manual stash")
-        push_stash_id(stash_id)
+        with cit_lock():
+            stash_id = create_stash_entry(message="manual stash")
+            push_stash_id(stash_id)
         click.echo(f"Saved stash@{{0}}: {stash_id}")
 
 
@@ -57,8 +59,9 @@ def show_stash(index: str) -> None:
 @stash.command("drop")
 @click.argument("index", required=False, default="0")
 def drop_stash(index: str) -> None:
-    stash_id = pop_stash_id(int(index))
-    delete_stash_entry(stash_id)
+    with cit_lock():
+        stash_id = pop_stash_id(int(index))
+        delete_stash_entry(stash_id)
     click.echo(f"Dropped stash@{{{index}}}")
 
 
@@ -66,14 +69,15 @@ def drop_stash(index: str) -> None:
 @click.argument("index", required=False, default="0")
 def pop_stash(index: str) -> None:
     stash_index = int(index)
-    stash_id = _get_stash_id(stash_index)
-    entry = load_stash_entry(stash_id)
-    keychain.write_keychain_payload(entry["keychain"])
-    patch_oauth_account(entry["oauth_account"])
-    if entry.get("settings"):
-        merge_settings(entry["settings"])
-    if entry.get("mcp"):
-        merge_mcp(entry["mcp"])
-    pop_stash_id(stash_index)
-    delete_stash_entry(stash_id)
+    with cit_lock():
+        stash_id = _get_stash_id(stash_index)
+        entry = load_stash_entry(stash_id)
+        keychain.write_keychain_payload(entry["keychain"])
+        patch_oauth_account(entry["oauth_account"])
+        if entry.get("settings"):
+            merge_settings(entry["settings"])
+        if entry.get("mcp"):
+            merge_mcp(entry["mcp"])
+        pop_stash_id(stash_index)
+        delete_stash_entry(stash_id)
     click.echo(f"Applied stash@{{{stash_index}}}")

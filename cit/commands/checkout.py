@@ -53,7 +53,6 @@ def _has_unsaved_changes(current: str | None) -> bool:
 @click.argument("name", required=False)
 def checkout(create_name: str | None, name: str | None) -> None:
     with cit_lock():
-        recover_if_needed()
         state = read_state()
         current = state.get("activeProfile")
         if create_name:
