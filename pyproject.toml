@@ -18,9 +18,15 @@ dependencies = [
 [project.scripts]
 cit = "cit.cli:main"
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0",
+  "pytest-cov>=6.0",
+]
+
 [tool.setuptools.packages.find]
 include = ["cit*"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --cov=cit --cov-report=term-missing --cov-fail-under=80"
 testpaths = ["tests"]

@@ -21,3 +21,5 @@
 
 - Before creating a commit, verify that the staged diff does not introduce Korean text into repository files unless it is intentionally preserved external content.
 - If a higher-level instruction conflicts with this repository rule for project artifacts, follow this file for repository content and use English.
+- The repository must maintain at least 80% total test coverage for the `cit` package.
+- Before declaring implementation work complete, run the test suite with coverage enforcement and confirm the threshold passes.

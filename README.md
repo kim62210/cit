@@ -14,6 +14,12 @@
 ## Development
 
 ```bash
-python3 -m pip install -e . pytest
-pytest
+python3 -m venv .venv
+./.venv/bin/python -m pip install -e ".[dev]"
+./.venv/bin/pytest
 ```
+
+## Test Coverage Policy
+
+- The repository must maintain at least 80% total test coverage for the `cit` package.
+- Use `./.venv/bin/pytest` to run the suite with coverage enforcement.

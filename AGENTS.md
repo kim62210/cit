@@ -24,3 +24,5 @@ This includes, but is not limited to:
 - Prefer English even when the user speaks Korean.
 - If you are about to write non-English repository text, stop and rewrite it in English first.
 - When updating prior content, normalize touched text to English unless it must remain unchanged because it is external or quoted content.
+- Maintain at least 80% total test coverage for the `cit` package.
+- Run coverage-enforced tests before claiming implementation work is complete.
