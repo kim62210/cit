@@ -21,7 +21,10 @@ def _format_expiry(epoch_ms: int | None) -> str:
     return f"{expiry.strftime('%Y-%m-%d %H:%M:%S')} ({days}d {hours}h remaining)"
 
 
-@click.command()
+@click.command(
+    help="Show the active profile, account details, model, and stash status.",
+    short_help="Show the active account status.",
+)
 @click.option("--short", "short_output", is_flag=True, help="Show one-line summary")
 def status(short_output: bool) -> None:
     state = read_state()

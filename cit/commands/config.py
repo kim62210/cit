@@ -14,7 +14,10 @@ from cit.core.lock import cit_lock
 from cit.core.state import read_state
 
 
-@click.command()
+@click.command(
+    help="Inspect and update global or per-profile cit configuration.",
+    short_help="Manage cit configuration.",
+)
 @click.option("--list", "list_values", is_flag=True, help="List config values")
 @click.option("--global", "global_scope", is_flag=True, help="Use global scope")
 @click.option("--unset", "unset_key", default=None, help="Unset key")

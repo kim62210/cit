@@ -55,7 +55,10 @@ def has_running_claude_process() -> bool:
     return result.returncode == 0
 
 
-@click.command()
+@click.command(
+    help="Switch to a saved profile or create one before switching.",
+    short_help="Switch to a saved profile.",
+)
 @click.option(
     "-b",
     "create_name",

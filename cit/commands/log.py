@@ -9,7 +9,11 @@ from cit.core.pricing import estimate_cost
 from cit.core.session_reader import read_sessions
 
 
-@click.command(name="log")
+@click.command(
+    name="log",
+    help="Show Claude session history with usage and cost summaries.",
+    short_help="Show session history and token usage.",
+)
 @click.option("--today", "today_only", is_flag=True, help="Show only today's sessions")
 @click.option(
     "--week", "week_only", is_flag=True, help="Show only this week's sessions"

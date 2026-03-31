@@ -12,7 +12,11 @@ from cit.core.profile import (
 from cit.core.state import read_state
 
 
-@click.command(context_settings={"ignore_unknown_options": True})
+@click.command(
+    context_settings={"ignore_unknown_options": True},
+    help="Save, list, and remove named account profiles.",
+    short_help="Save, list, and remove named account profiles.",
+)
 @click.argument("name", required=False)
 @click.option("-d", "delete_name", default=None, help="Delete profile")
 @click.option("-v", "verbose", is_flag=True, help="Verbose output")

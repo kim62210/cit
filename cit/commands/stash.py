@@ -19,7 +19,11 @@ def _get_stash_id(index: int) -> str:
     return stack[index]
 
 
-@click.group(invoke_without_command=True)
+@click.group(
+    invoke_without_command=True,
+    help="Temporarily save, inspect, restore, and drop account snapshots.",
+    short_help="Temporarily save and restore account state.",
+)
 @click.pass_context
 def stash(ctx: click.Context) -> None:
     if ctx.invoked_subcommand is None:
