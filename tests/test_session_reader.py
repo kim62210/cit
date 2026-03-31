@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 from cit.core.session_reader import project_slug_for_path, read_sessions
@@ -38,13 +39,25 @@ def test_session_reader_skips_files_without_assistant_usage(env_paths):
 
 
 def test_session_reader_filters_today_and_week_windows(env_paths):
+    today_timestamp = (
+        datetime.combine(date.today(), time(10, 56), tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+    old_timestamp = (
+        datetime.combine(
+            date.today() - timedelta(days=8), time(10, 56), tzinfo=timezone.utc
+        )
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
     project_path = Path("/tmp/window-project")
     project_dir = env_paths["projects_home"] / project_slug_for_path(project_path)
     project_dir.mkdir(parents=True, exist_ok=True)
     (project_dir / "today.jsonl").write_text(
         json.dumps(
             {
-                "created_at": "2026-03-31T10:56:00Z",
+                "created_at": today_timestamp,
                 "message": {
                     "role": "assistant",
                     "model": "claude-opus-4-6",
@@ -56,7 +69,7 @@ def test_session_reader_filters_today_and_week_windows(env_paths):
     (project_dir / "old.jsonl").write_text(
         json.dumps(
             {
-                "created_at": "2026-03-01T10:56:00Z",
+                "created_at": old_timestamp,
                 "message": {
                     "role": "assistant",
                     "model": "claude-opus-4-6",

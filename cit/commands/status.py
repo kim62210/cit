@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
+from typing import Any
 
 import click
 
@@ -22,12 +24,24 @@ def _format_expiry(epoch_ms: int | None) -> str:
     return f"{expiry.strftime('%Y-%m-%d %H:%M:%S')} ({days}d {hours}h remaining)"
 
 
-def _session_summary() -> str:
+def _latest_session() -> dict[str, Any] | None:
     sessions = read_sessions()
     if not sessions:
-        return "unknown"
+        return None
     latest = sessions[0]
-    return f"recent {latest.session_id} ({latest.model or 'unknown'})"
+    return {
+        "session_id": latest.session_id,
+        "project_slug": latest.project_slug,
+        "model": latest.model,
+        "started_at": latest.started_at,
+    }
+
+
+def _session_summary() -> str:
+    latest = _latest_session()
+    if latest is None:
+        return "unknown"
+    return f"recent {latest['session_id']} ({latest['model'] or 'unknown'})"
 
 
 @click.command(
@@ -35,7 +49,10 @@ def _session_summary() -> str:
     short_help="Show the active context summary.",
 )
 @click.option("--short", "short_output", is_flag=True, help="Show one-line summary")
-def status(short_output: bool) -> None:
+@click.option(
+    "--json", "json_output", is_flag=True, help="Show machine-readable JSON output"
+)
+def status(short_output: bool, json_output: bool) -> None:
     state = read_state()
     keychain_payload = keychain.read_keychain_payload().get("claudeAiOauth", {})
     oauth = read_oauth_account()
@@ -46,6 +63,28 @@ def status(short_output: bool) -> None:
     rate_limit = keychain_payload.get("rateLimitTier")
     email = oauth.get("emailAddress") or "unknown"
     model = settings.get("model") or "unknown"
+    latest_session = _latest_session()
+    if json_output:
+        click.echo(
+            json.dumps(
+                {
+                    "profile": active_profile,
+                    "account": email,
+                    "display_name": oauth.get("displayName", "unknown"),
+                    "organization": oauth.get("organizationName", "unknown"),
+                    "organization_role": oauth.get("organizationRole", "unknown"),
+                    "subscription": subscription,
+                    "rate_limit_tier": rate_limit or "unknown",
+                    "model": model,
+                    "token_expiry": _format_expiry(keychain_payload.get("expiresAt")),
+                    "session": latest_session,
+                    "stash_count": stash_count,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
     if short_output:
         click.echo(f"{active_profile} {email} {subscription} {model}")
         return
