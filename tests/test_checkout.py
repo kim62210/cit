@@ -279,3 +279,79 @@ def test_checkout_fails_cleanly_when_keychain_is_unavailable(
 
     assert result.exit_code == 1
     assert "Error: Keychain access is unavailable" in result.output
+
+
+def test_checkout_dry_run_json_returns_machine_readable_plan(
+    runner, env_paths, monkeypatch
+):
+    keychain_store = {
+        "payload": {
+            "claudeAiOauth": {"subscriptionType": "max", "rateLimitTier": "default"}
+        }
+    }
+    write_calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload", lambda: keychain_store["payload"]
+    )
+    monkeypatch.setattr(
+        "cit.core.keychain.write_keychain_payload",
+        lambda payload: write_calls.append(payload),
+    )
+    monkeypatch.setattr("cit.core.keychain.validate_keychain_access", lambda: None)
+    monkeypatch.setattr(
+        "cit.commands.checkout.has_running_claude_process", lambda: True
+    )
+
+    set_active_profile("personal", None)
+    save_current_profile("personal", with_config=True)
+
+    target_oauth = json.loads(env_paths["claude_json"].read_text())
+    target_oauth["oauthAccount"]["emailAddress"] = "office@example.com"
+    env_paths["claude_json"].write_text(json.dumps(target_oauth))
+    (env_paths["claude_home"] / "settings.json").write_text(
+        json.dumps({"model": "sonnet"})
+    )
+    (env_paths["claude_home"] / ".mcp.json").write_text(
+        json.dumps({"legacy": {"command": "old"}})
+    )
+    keychain_store["payload"] = {
+        "claudeAiOauth": {"subscriptionType": "team", "rateLimitTier": "work"}
+    }
+    save_current_profile("office", with_config=True)
+
+    keychain_store["payload"] = {
+        "claudeAiOauth": {"subscriptionType": "max", "rateLimitTier": "default"}
+    }
+    source_oauth = json.loads(env_paths["claude_json"].read_text())
+    source_oauth["oauthAccount"]["emailAddress"] = "active@example.com"
+    env_paths["claude_json"].write_text(json.dumps(source_oauth))
+    (env_paths["claude_home"] / "settings.json").write_text(
+        json.dumps({"model": "haiku"})
+    )
+    (env_paths["claude_home"] / ".mcp.json").write_text(json.dumps({}))
+
+    set_config_value("model", "opus[1m]", "office")
+    set_config_value("permission-mode", "dangerousSkipPermissions", "office")
+    set_config_value(
+        "mcp.memory",
+        '{"command": "npx", "args": ["@anthropic/memory-mcp"]}',
+        "office",
+    )
+
+    result = runner.invoke(main, ["checkout", "office", "--dry-run", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["from_profile"] == "personal"
+    assert payload["to_profile"] == "office"
+    assert payload["will_auto_stash"] is True
+    assert payload["current"]["account"] == "active@example.com"
+    assert payload["target"]["oauth_account"]["emailAddress"] == "office@example.com"
+    assert payload["target_settings"]["model"] == "opus[1m]"
+    assert payload["target_settings"]["permission-mode"] == "dangerousSkipPermissions"
+    assert payload["target_mcp"]["memory"]["command"] == "npx"
+    assert payload["warnings"] == [
+        "Claude appears to be running; switching accounts may disrupt active sessions."
+    ]
+    assert write_calls == []

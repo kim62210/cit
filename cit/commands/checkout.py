@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from typing import Any
 
@@ -141,14 +142,19 @@ def _render_checkout_plan(plan: dict[str, Any]) -> str:
     is_flag=True,
     help="Preview profile, account, settings, and MCP changes without applying them.",
 )
+@click.option(
+    "--json", "json_output", is_flag=True, help="Show machine-readable JSON output"
+)
 @click.argument("name", required=False)
-def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
+def checkout(
+    create_name: str | None, dry_run: bool, json_output: bool, name: str | None
+) -> None:
     with cit_lock():
         state = read_state()
         current = state.get("activeProfile")
         if create_name:
-            if dry_run:
-                raise click.ClickException("--dry-run cannot be used with -b")
+            if dry_run or json_output:
+                raise click.ClickException("--dry-run/--json cannot be used with -b")
             save_current_profile(create_name, with_config=True)
             set_active_profile(create_name, current)
             click.echo(f"Switched to a new context stored as profile '{create_name}'")
@@ -166,8 +172,13 @@ def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
         except (FileNotFoundError, RuntimeError) as error:
             raise click.ClickException(str(error)) from error
         if dry_run:
+            if json_output:
+                click.echo(json.dumps(plan, indent=2, sort_keys=True))
+                return
             click.echo(_render_checkout_plan(plan))
             return
+        if json_output:
+            raise click.ClickException("--json requires --dry-run")
         target = plan["target"]
         for warning in plan["warnings"]:
             click.echo(f"Warning: {warning}")
