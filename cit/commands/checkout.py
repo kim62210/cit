@@ -186,14 +186,15 @@ def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
             if name is None:
                 raise click.ClickException("No previous profile")
         try:
+            load_profile(name)
+            keychain.validate_keychain_access()
             plan = _build_checkout_plan(current, name)
-        except FileNotFoundError as error:
+        except (FileNotFoundError, RuntimeError) as error:
             raise click.ClickException(str(error)) from error
         if dry_run:
             click.echo(_render_checkout_plan(plan))
             return
         target = plan["target"]
-        keychain.validate_keychain_access()
         for warning in plan["warnings"]:
             click.echo(f"Warning: {warning}")
         if plan["will_auto_stash"]:

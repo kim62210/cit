@@ -239,3 +239,43 @@ def test_checkout_dry_run_reports_missing_profile_cleanly(runner, env_paths):
 
     assert result.exit_code == 1
     assert "Error: Profile not found: missing" in result.output
+
+
+def test_checkout_dry_run_fails_cleanly_when_keychain_is_unavailable(
+    runner, env_paths, monkeypatch
+):
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload",
+        lambda: {"claudeAiOauth": {"subscriptionType": "max"}},
+    )
+    set_active_profile("personal", None)
+    save_current_profile("office", with_config=True)
+    monkeypatch.setattr(
+        "cit.core.keychain.validate_keychain_access",
+        lambda: (_ for _ in ()).throw(RuntimeError("Keychain access is unavailable")),
+    )
+
+    result = runner.invoke(main, ["checkout", "office", "--dry-run"])
+
+    assert result.exit_code == 1
+    assert "Error: Keychain access is unavailable" in result.output
+
+
+def test_checkout_fails_cleanly_when_keychain_is_unavailable(
+    runner, env_paths, monkeypatch
+):
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload",
+        lambda: {"claudeAiOauth": {"subscriptionType": "max"}},
+    )
+    set_active_profile("personal", None)
+    save_current_profile("office", with_config=True)
+    monkeypatch.setattr(
+        "cit.core.keychain.validate_keychain_access",
+        lambda: (_ for _ in ()).throw(RuntimeError("Keychain access is unavailable")),
+    )
+
+    result = runner.invoke(main, ["checkout", "office"])
+
+    assert result.exit_code == 1
+    assert "Error: Keychain access is unavailable" in result.output
