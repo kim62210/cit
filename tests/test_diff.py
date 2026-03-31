@@ -77,3 +77,45 @@ def test_diff_reports_missing_profile_cleanly(runner):
 
     assert result.exit_code == 1
     assert "Error: Profile not found: missing" in result.output
+
+
+def test_diff_json_returns_machine_readable_payload(runner, env_paths, monkeypatch):
+    keychain_store = {
+        "payload": {
+            "claudeAiOauth": {"subscriptionType": "max", "rateLimitTier": "default"}
+        }
+    }
+
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload", lambda: keychain_store["payload"]
+    )
+
+    save_current_profile("personal", with_config=True)
+
+    work_oauth = json.loads(env_paths["claude_json"].read_text())
+    work_oauth["oauthAccount"]["emailAddress"] = "work@example.com"
+    env_paths["claude_json"].write_text(json.dumps(work_oauth))
+    (env_paths["claude_home"] / "settings.json").write_text(
+        json.dumps({"model": "sonnet"})
+    )
+    keychain_store["payload"] = {
+        "claudeAiOauth": {"subscriptionType": "team", "rateLimitTier": "work"}
+    }
+    save_current_profile("work", with_config=True)
+    set_config_value("model", "opus[1m]", "work")
+    set_config_value("permission-mode", "dangerousSkipPermissions", "work")
+
+    result = runner.invoke(main, ["diff", "personal", "work", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["from_profile"] == "personal"
+    assert payload["to_profile"] == "work"
+    assert payload["source"]["account"] == "active@example.com"
+    assert payload["target"]["account"] == "work@example.com"
+    assert payload["changes"]["subscription"] == {"from": "max", "to": "team"}
+    assert payload["changes"]["model"] == {"from": "opus", "to": "opus[1m]"}
+    assert payload["changes"]["permission_mode"] == {
+        "from": "unset",
+        "to": "dangerousSkipPermissions",
+    }

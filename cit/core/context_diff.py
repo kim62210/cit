@@ -54,9 +54,42 @@ def effective_profile_view(name: str) -> dict[str, Any]:
     }
 
 
-def render_context_diff(from_name: str, to_name: str) -> str:
+def context_diff_payload(from_name: str, to_name: str) -> dict[str, Any]:
     source = effective_profile_view(from_name)
     target = effective_profile_view(to_name)
+    changes: dict[str, Any] = {}
+    if source["account"] != target["account"]:
+        changes["account"] = {"from": source["account"], "to": target["account"]}
+    if source["subscription"] != target["subscription"]:
+        changes["subscription"] = {
+            "from": source["subscription"],
+            "to": target["subscription"],
+        }
+    if source["model"] != target["model"]:
+        changes["model"] = {"from": source["model"], "to": target["model"]}
+    source_permission = source.get("permission-mode") or "unset"
+    target_permission = target.get("permission-mode") or "unset"
+    if source_permission != target_permission:
+        changes["permission_mode"] = {
+            "from": source_permission,
+            "to": target_permission,
+        }
+    mcp_changes = _describe_mcp_changes(source["mcp"], target["mcp"])
+    if mcp_changes:
+        changes["mcp"] = mcp_changes
+    return {
+        "from_profile": from_name,
+        "to_profile": to_name,
+        "source": source,
+        "target": target,
+        "changes": changes,
+    }
+
+
+def render_context_diff(from_name: str, to_name: str) -> str:
+    payload = context_diff_payload(from_name, to_name)
+    source = payload["source"]
+    target = payload["target"]
     lines = [f"Diff: {from_name} -> {to_name}"]
     changes: list[str] = []
     if source["account"] != target["account"]:
