@@ -14,27 +14,33 @@ from cit.core.wal import recover_if_needed
 
 
 ASCII_BANNER = r"""
- ___ ___ _____
-/ __|_ _|_   _|
-| (__ | |  | |
- \___|___| |_|
+░█████╗░██╗████████╗
+██╔══██╗██║╚══██╔══╝
+██║░░╚═╝██║░░░██║░░░
+██║░░██╗██║░░░██║░░░
+╚█████╔╝██║░░░██║░░░
+░╚════╝░╚═╝░░░╚═╝░░░
 """.strip("\n")
+
+HELP_SUMMARY = "Git-style account switching for Claude Code."
+HELP_DETAILS = (
+    "Save reusable profiles, switch accounts cleanly, and confirm the active "
+    "setup without digging through local files."
+)
+QUICK_START = (
+    "Quick start:\n"
+    "  cit status                     Inspect the active account and profile.\n"
+    "  cit branch work --with-config  Save the current account as a reusable profile.\n"
+    "  cit checkout office            Switch to a saved work profile.\n"
+    "  cit log --today --stats        Review today's session usage and cost."
+)
 
 
 class CitHelpGroup(click.Group):
     def get_help(self, ctx: click.Context) -> str:
-        base_help = super().get_help(ctx)
-        quick_start = (
-            "Quick start:\n"
-            "  cit status                     Inspect the active account and profile.\n"
-            "  cit branch work --with-config  Save the current account as a reusable profile.\n"
-            "  cit checkout office            Switch to a saved work profile.\n"
-            "  cit log --today --stats        Review today's session usage and cost."
-        )
-        return (
-            f"{ASCII_BANNER}\n\n"
-            "Git-style account switching for Claude Code.\n\n"
-            f"{base_help}\n\n{quick_start}"
+        base_help = super().get_help(ctx).strip()
+        return "\n\n".join(
+            [ASCII_BANNER, HELP_SUMMARY, HELP_DETAILS, base_help, QUICK_START]
         )
 
 
