@@ -16,6 +16,7 @@ def test_main_help_shows_branding_examples_and_descriptions(runner):
     ) in result.output
     assert "Quick start" in result.output
     assert "cit checkout office" in result.output
+    assert "diff      Compare two saved Claude contexts." in result.output
     assert (
         "branch    Save, list, and remove named Claude contexts stored as profiles."
         in result.output

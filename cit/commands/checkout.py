@@ -15,6 +15,11 @@ from cit.core.claude_files import (
     read_settings,
 )
 from cit.core.config_manager import checkout_overrides, resolve_config
+from cit.core.context_diff import (
+    _build_target_mcp,
+    _build_target_settings,
+    _describe_mcp_changes,
+)
 from cit.core.lock import cit_lock
 from cit.core.profile import create_stash_entry, load_profile, save_current_profile
 from cit.core.state import push_stash_id, read_state, set_active_profile
@@ -54,37 +59,6 @@ def has_running_claude_process() -> bool:
         check=False,
     )
     return result.returncode == 0
-
-
-def _build_target_settings(
-    target: dict[str, Any], settings_overrides: dict[str, Any]
-) -> dict[str, Any]:
-    target_settings = dict(target.get("settings") or {})
-    target_settings.update(settings_overrides)
-    return target_settings
-
-
-def _build_target_mcp(
-    target: dict[str, Any], mcp_overrides: dict[str, Any]
-) -> dict[str, Any]:
-    target_mcp = dict(target.get("mcp") or {})
-    target_mcp.update(mcp_overrides)
-    return target_mcp
-
-
-def _describe_mcp_changes(
-    current_mcp: dict[str, Any], target_mcp: dict[str, Any]
-) -> list[str]:
-    changes: list[str] = []
-    keys = sorted(set(current_mcp) | set(target_mcp))
-    for key in keys:
-        if key not in current_mcp:
-            changes.append(f"+ mcp.{key}")
-        elif key not in target_mcp:
-            changes.append(f"- mcp.{key}")
-        elif current_mcp[key] != target_mcp[key]:
-            changes.append(f"~ mcp.{key}")
-    return changes
 
 
 def _build_checkout_plan(current: str | None, name: str) -> dict[str, Any]:
