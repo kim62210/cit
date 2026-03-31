@@ -6,6 +6,7 @@ import click
 
 from cit.core import keychain
 from cit.core.claude_files import read_oauth_account, read_settings
+from cit.core.session_reader import read_sessions
 from cit.core.state import read_state
 
 
@@ -19,6 +20,14 @@ def _format_expiry(epoch_ms: int | None) -> str:
     hours = int(remaining.total_seconds() // 3600)
     days, hours = divmod(hours, 24)
     return f"{expiry.strftime('%Y-%m-%d %H:%M:%S')} ({days}d {hours}h remaining)"
+
+
+def _session_summary() -> str:
+    sessions = read_sessions()
+    if not sessions:
+        return "unknown"
+    latest = sessions[0]
+    return f"recent {latest.session_id} ({latest.model or 'unknown'})"
 
 
 @click.command(
@@ -52,5 +61,5 @@ def status(short_output: bool) -> None:
     click.echo(f"Model:         {model}")
     click.echo(f"Token Expiry:  {_format_expiry(keychain_payload.get('expiresAt'))}")
     click.echo("")
-    click.echo("Session:       unknown")
+    click.echo(f"Session:       {_session_summary()}")
     click.echo(f"Stash:         {stash_count} entr{'y' if stash_count == 1 else 'ies'}")
