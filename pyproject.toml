@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cit-cli"
+version = "0.1.0"
+description = "A git-style CLI for managing Claude Code accounts"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "click>=8.1",
+  "rich>=13.9",
+  "pydantic>=2.9",
+  "tomli-w>=1.0",
+]
+
+[project.scripts]
+cit = "cit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cit*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
