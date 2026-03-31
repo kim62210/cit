@@ -136,3 +136,27 @@ def test_checkout_skips_auto_stash_when_current_profile_is_unchanged(
 
     assert result.exit_code == 0
     assert read_state()["stashStack"] == []
+
+
+def test_checkout_warns_when_claude_process_is_running(runner, env_paths, monkeypatch):
+    keychain_store = {"payload": {"claudeAiOauth": {"subscriptionType": "max"}}}
+
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload", lambda: keychain_store["payload"]
+    )
+    monkeypatch.setattr("cit.core.keychain.validate_keychain_access", lambda: None)
+    monkeypatch.setattr(
+        "cit.core.keychain.write_keychain_payload",
+        lambda payload: keychain_store.__setitem__("payload", payload),
+    )
+    monkeypatch.setattr(
+        "cit.commands.checkout.has_running_claude_process", lambda: True
+    )
+
+    set_active_profile("personal", None)
+    save_current_profile("office", with_config=True)
+
+    result = runner.invoke(main, ["checkout", "office"])
+
+    assert result.exit_code == 0
+    assert "Warning: Claude appears to be running" in result.output

@@ -20,8 +20,13 @@ DEFAULT_STATE = {
 def ensure_cit_dirs() -> Path:
     base = get_cit_home()
     base.mkdir(mode=0o700, parents=True, exist_ok=True)
-    (base / "profiles").mkdir(exist_ok=True)
-    (base / "stash").mkdir(exist_ok=True)
+    base.chmod(0o700)
+    profiles = base / "profiles"
+    profiles.mkdir(exist_ok=True)
+    profiles.chmod(0o700)
+    stash = base / "stash"
+    stash.mkdir(exist_ok=True)
+    stash.chmod(0o700)
     return base
 
 

@@ -23,6 +23,18 @@ def stash_dir() -> Path:
     return ensure_cit_dirs() / "stash"
 
 
+def _write_snapshot_file(
+    path: Path, payload: dict[str, Any], mode: int = 0o600
+) -> None:
+    path.write_text(json.dumps(payload, indent=2))
+    path.chmod(mode)
+
+
+def _ensure_private_dir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    path.chmod(0o700)
+
+
 def validate_profile_name(name: str) -> None:
     if name == "HEAD" or not PROFILE_PATTERN.match(name):
         raise ValueError("Invalid profile name")
@@ -59,17 +71,17 @@ def load_profile(name: str) -> dict[str, Any]:
 def save_current_profile(name: str, with_config: bool = False) -> Path:
     validate_profile_name(name)
     target = profile_path(name)
-    target.mkdir(parents=True, exist_ok=True)
+    _ensure_private_dir(target)
     keychain_payload = keychain.read_keychain_payload()
     oauth = read_oauth_account()
     settings = read_settings()
     mcp = read_mcp()
-    (target / "keychain.json").write_text(json.dumps(keychain_payload, indent=2))
-    (target / "oauth_account.json").write_text(json.dumps(oauth, indent=2))
+    _write_snapshot_file(target / "keychain.json", keychain_payload)
+    _write_snapshot_file(target / "oauth_account.json", oauth)
     if with_config and settings:
-        (target / "settings.json").write_text(json.dumps(settings, indent=2))
+        _write_snapshot_file(target / "settings.json", settings)
         if mcp:
-            (target / "mcp.json").write_text(json.dumps(mcp, indent=2))
+            _write_snapshot_file(target / "mcp.json", mcp)
     meta = {
         "name": name,
         "createdAt": int(time.time() * 1000),
@@ -77,7 +89,7 @@ def save_current_profile(name: str, with_config: bool = False) -> Path:
         "sourceEmail": oauth.get("emailAddress"),
         "sourceOrganization": oauth.get("organizationName"),
     }
-    (target / "meta.json").write_text(json.dumps(meta, indent=2))
+    _write_snapshot_file(target / "meta.json", meta)
     return target
 
 
@@ -91,17 +103,17 @@ def delete_profile(name: str) -> None:
 def create_stash_entry(message: str | None = None, include_config: bool = True) -> str:
     stash_id = str(int(time.time() * 1000))
     path = stash_dir() / stash_id
-    path.mkdir(parents=True, exist_ok=True)
+    _ensure_private_dir(path)
     keychain_payload = keychain.read_keychain_payload()
     oauth = read_oauth_account()
     settings = read_settings()
     mcp = read_mcp()
-    (path / "keychain.json").write_text(json.dumps(keychain_payload, indent=2))
-    (path / "oauth_account.json").write_text(json.dumps(oauth, indent=2))
+    _write_snapshot_file(path / "keychain.json", keychain_payload)
+    _write_snapshot_file(path / "oauth_account.json", oauth)
     if include_config and settings:
-        (path / "settings.json").write_text(json.dumps(settings, indent=2))
+        _write_snapshot_file(path / "settings.json", settings)
         if mcp:
-            (path / "mcp.json").write_text(json.dumps(mcp, indent=2))
+            _write_snapshot_file(path / "mcp.json", mcp)
     meta = {
         "message": message,
         "createdAt": int(time.time() * 1000),
@@ -110,7 +122,7 @@ def create_stash_entry(message: str | None = None, include_config: bool = True) 
             "subscriptionType"
         ),
     }
-    (path / "meta.json").write_text(json.dumps(meta, indent=2))
+    _write_snapshot_file(path / "meta.json", meta)
     return stash_id
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+
 import click
 
 from cit.core import keychain
@@ -43,6 +45,16 @@ def _has_unsaved_changes(current: str | None) -> bool:
     return False
 
 
+def has_running_claude_process() -> bool:
+    result = subprocess.run(
+        ["pgrep", "-x", "claude"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 @click.command()
 @click.option(
     "-b",
@@ -68,6 +80,10 @@ def checkout(create_name: str | None, name: str | None) -> None:
                 raise click.ClickException("No previous profile")
         target = load_profile(name)
         keychain.validate_keychain_access()
+        if has_running_claude_process():
+            click.echo(
+                "Warning: Claude appears to be running; switching accounts may disrupt active sessions."
+            )
         config = resolve_config(current)
         if config.get("auto-stash", True) and _has_unsaved_changes(current):
             stash_id = create_stash_entry(
