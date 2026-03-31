@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+from typing import Any
 
 import click
 
@@ -55,6 +56,102 @@ def has_running_claude_process() -> bool:
     return result.returncode == 0
 
 
+def _build_target_settings(
+    target: dict[str, Any], settings_overrides: dict[str, Any]
+) -> dict[str, Any]:
+    target_settings = dict(target.get("settings") or {})
+    target_settings.update(settings_overrides)
+    return target_settings
+
+
+def _build_target_mcp(
+    target: dict[str, Any], mcp_overrides: dict[str, Any]
+) -> dict[str, Any]:
+    target_mcp = dict(target.get("mcp") or {})
+    target_mcp.update(mcp_overrides)
+    return target_mcp
+
+
+def _describe_mcp_changes(
+    current_mcp: dict[str, Any], target_mcp: dict[str, Any]
+) -> list[str]:
+    changes: list[str] = []
+    keys = sorted(set(current_mcp) | set(target_mcp))
+    for key in keys:
+        if key not in current_mcp:
+            changes.append(f"+ mcp.{key}")
+        elif key not in target_mcp:
+            changes.append(f"- mcp.{key}")
+        elif current_mcp[key] != target_mcp[key]:
+            changes.append(f"~ mcp.{key}")
+    return changes
+
+
+def _build_checkout_plan(current: str | None, name: str) -> dict[str, Any]:
+    target = load_profile(name)
+    current_oauth = read_oauth_account()
+    current_settings = read_settings()
+    current_mcp = read_mcp()
+    current_keychain = keychain.read_keychain_payload().get("claudeAiOauth", {})
+    settings_overrides, mcp_overrides = checkout_overrides(name)
+    target_settings = _build_target_settings(target, settings_overrides)
+    target_mcp = _build_target_mcp(target, mcp_overrides)
+    warnings: list[str] = []
+    if has_running_claude_process():
+        warnings.append(
+            "Claude appears to be running; switching accounts may disrupt active sessions."
+        )
+    return {
+        "from_profile": current or "detached",
+        "to_profile": name,
+        "current": {
+            "account": current_oauth.get("emailAddress", "unknown"),
+            "subscription": current_keychain.get("subscriptionType", "unknown"),
+            "model": current_settings.get("model", "unknown"),
+            "permission-mode": current_settings.get("permission-mode"),
+            "mcp": current_mcp,
+        },
+        "target": target,
+        "target_settings": target_settings,
+        "target_mcp": target_mcp,
+        "will_auto_stash": resolve_config(current).get("auto-stash", True)
+        and _has_unsaved_changes(current),
+        "warnings": warnings,
+    }
+
+
+def _render_checkout_plan(plan: dict[str, Any]) -> str:
+    target_oauth = plan["target"]["oauth_account"]
+    target_keychain = plan["target"]["keychain"].get("claudeAiOauth", {})
+    lines = [
+        f"Dry run: checkout '{plan['to_profile']}'",
+        f"Profile: {plan['from_profile']} -> {plan['to_profile']}",
+        f"Account: {plan['current']['account']} -> {target_oauth.get('emailAddress', 'unknown')}",
+    ]
+    if plan["current"]["subscription"] != target_keychain.get(
+        "subscriptionType", "unknown"
+    ):
+        lines.append(
+            f"~ subscription: {plan['current']['subscription']} -> {target_keychain.get('subscriptionType', 'unknown')}"
+        )
+    if plan["current"]["model"] != plan["target_settings"].get("model", "unknown"):
+        lines.append(
+            f"~ model: {plan['current']['model']} -> {plan['target_settings'].get('model', 'unknown')}"
+        )
+    if plan["current"].get("permission-mode") != plan["target_settings"].get(
+        "permission-mode"
+    ):
+        lines.append(
+            f"~ permission-mode: {plan['current'].get('permission-mode', 'unset')} -> {plan['target_settings'].get('permission-mode', 'unset')}"
+        )
+    lines.extend(_describe_mcp_changes(plan["current"]["mcp"], plan["target_mcp"]))
+    lines.append(f"! auto-stash: {'yes' if plan['will_auto_stash'] else 'no'}")
+    for warning in plan["warnings"]:
+        lines.append(f"! warning: {warning}")
+    lines.append("No files were changed.")
+    return "\n".join(lines)
+
+
 @click.command(
     help="Switch to a saved profile or create one before switching.",
     short_help="Switch to a saved profile.",
@@ -65,12 +162,19 @@ def has_running_claude_process() -> bool:
     default=None,
     help="Create a profile from the current state and switch to it",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Preview profile, account, settings, and MCP changes without applying them.",
+)
 @click.argument("name", required=False)
-def checkout(create_name: str | None, name: str | None) -> None:
+def checkout(create_name: str | None, dry_run: bool, name: str | None) -> None:
     with cit_lock():
         state = read_state()
         current = state.get("activeProfile")
         if create_name:
+            if dry_run:
+                raise click.ClickException("--dry-run cannot be used with -b")
             save_current_profile(create_name, with_config=True)
             set_active_profile(create_name, current)
             click.echo(f"Switched to a new profile '{create_name}'")
@@ -81,19 +185,24 @@ def checkout(create_name: str | None, name: str | None) -> None:
             name = state.get("previousProfile")
             if name is None:
                 raise click.ClickException("No previous profile")
-        target = load_profile(name)
+        try:
+            plan = _build_checkout_plan(current, name)
+        except FileNotFoundError as error:
+            raise click.ClickException(str(error)) from error
+        if dry_run:
+            click.echo(_render_checkout_plan(plan))
+            return
+        target = plan["target"]
         keychain.validate_keychain_access()
-        if has_running_claude_process():
-            click.echo(
-                "Warning: Claude appears to be running; switching accounts may disrupt active sessions."
-            )
-        config = resolve_config(current)
-        if config.get("auto-stash", True) and _has_unsaved_changes(current):
+        for warning in plan["warnings"]:
+            click.echo(f"Warning: {warning}")
+        if plan["will_auto_stash"]:
             stash_id = create_stash_entry(
                 message=f"auto: pre-checkout from {current or 'detached'}"
             )
             push_stash_id(stash_id)
-        settings_overrides, mcp_overrides = checkout_overrides(name)
+        settings_overrides = plan["target_settings"]
+        mcp_overrides = plan["target_mcp"]
         backup = {
             "keychain": keychain.read_keychain_payload(),
             "oauth_account": read_oauth_account(),
@@ -108,13 +217,9 @@ def checkout(create_name: str | None, name: str | None) -> None:
             update_wal_step(1)
             patch_oauth_account(target["oauth_account"])
             update_wal_step(2)
-            if target.get("settings"):
-                merge_settings(target["settings"])
             if settings_overrides:
                 merge_settings(settings_overrides)
             update_wal_step(3)
-            if target.get("mcp"):
-                merge_mcp(target["mcp"])
             if mcp_overrides:
                 merge_mcp(mcp_overrides)
             set_active_profile(name, current)

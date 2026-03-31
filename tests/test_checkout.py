@@ -160,3 +160,82 @@ def test_checkout_warns_when_claude_process_is_running(runner, env_paths, monkey
 
     assert result.exit_code == 0
     assert "Warning: Claude appears to be running" in result.output
+
+
+def test_checkout_dry_run_shows_plan_without_mutating_state(
+    runner, env_paths, monkeypatch
+):
+    keychain_store = {
+        "payload": {
+            "claudeAiOauth": {"subscriptionType": "max", "rateLimitTier": "default"}
+        }
+    }
+    write_calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(
+        "cit.core.keychain.read_keychain_payload", lambda: keychain_store["payload"]
+    )
+    monkeypatch.setattr(
+        "cit.core.keychain.write_keychain_payload",
+        lambda payload: write_calls.append(payload),
+    )
+    monkeypatch.setattr("cit.core.keychain.validate_keychain_access", lambda: None)
+    monkeypatch.setattr(
+        "cit.commands.checkout.has_running_claude_process", lambda: True
+    )
+
+    set_active_profile("personal", None)
+    save_current_profile("personal", with_config=True)
+
+    target_oauth = json.loads(env_paths["claude_json"].read_text())
+    target_oauth["oauthAccount"]["emailAddress"] = "office@example.com"
+    env_paths["claude_json"].write_text(json.dumps(target_oauth))
+    (env_paths["claude_home"] / "settings.json").write_text(
+        json.dumps({"model": "sonnet"})
+    )
+    (env_paths["claude_home"] / ".mcp.json").write_text(
+        json.dumps({"legacy": {"command": "old"}})
+    )
+    keychain_store["payload"] = {
+        "claudeAiOauth": {"subscriptionType": "team", "rateLimitTier": "work"}
+    }
+    save_current_profile("office", with_config=True)
+
+    keychain_store["payload"] = {
+        "claudeAiOauth": {"subscriptionType": "max", "rateLimitTier": "default"}
+    }
+    source_oauth = json.loads(env_paths["claude_json"].read_text())
+    source_oauth["oauthAccount"]["emailAddress"] = "active@example.com"
+    env_paths["claude_json"].write_text(json.dumps(source_oauth))
+    (env_paths["claude_home"] / "settings.json").write_text(
+        json.dumps({"model": "haiku"})
+    )
+    (env_paths["claude_home"] / ".mcp.json").write_text(json.dumps({}))
+
+    set_config_value("model", "opus[1m]", "office")
+    set_config_value("permission-mode", "dangerousSkipPermissions", "office")
+    set_config_value(
+        "mcp.memory",
+        '{"command": "npx", "args": ["@anthropic/memory-mcp"]}',
+        "office",
+    )
+
+    result = runner.invoke(main, ["checkout", "office", "--dry-run"])
+
+    assert result.exit_code == 0
+    assert "Dry run: checkout 'office'" in result.output
+    assert "Profile: personal -> office" in result.output
+    assert "Account: active@example.com -> office@example.com" in result.output
+    assert "~ model: haiku -> opus[1m]" in result.output
+    assert "+ mcp.memory" in result.output
+    assert "! auto-stash: yes" in result.output
+    assert "! warning: Claude appears to be running" in result.output
+    assert read_state()["activeProfile"] == "personal"
+    assert write_calls == []
+
+
+def test_checkout_dry_run_reports_missing_profile_cleanly(runner, env_paths):
+    result = runner.invoke(main, ["checkout", "missing", "--dry-run"])
+
+    assert result.exit_code == 1
+    assert "Error: Profile not found: missing" in result.output
