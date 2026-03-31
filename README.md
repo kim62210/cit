@@ -2,6 +2,10 @@
 
 > Git-style context switching for Claude Code.
 
+<p align="center">
+  <img src="docs/assets/cit-social-preview.png" alt="cit social preview" width="640" />
+</p>
+
 `cit` is a local-first CLI for saving, inspecting, and switching Claude work contexts on macOS. A context bundles Claude account identity, model choice, MCP defaults, and related local switching state into a reusable workflow unit. Today, those contexts are stored as named profiles on disk.
 
 ## Why `cit` exists
