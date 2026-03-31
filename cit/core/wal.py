@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,11 @@ def read_wal() -> dict[str, Any] | None:
     path = wal_path()
     if not path.exists():
         return None
-    payload = json.loads(path.read_text())
+    try:
+        payload = json.loads(path.read_text())
+    except JSONDecodeError:
+        clear_wal()
+        return None
     return payload if payload else None
 
 
