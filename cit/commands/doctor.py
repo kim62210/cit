@@ -8,7 +8,7 @@ from typing import Any
 import click
 
 from cit.core import config_manager, keychain, profile, state, wal
-from cit.core.lock import cit_lock
+from cit.core.lock import cit_lock, is_lock_held
 from cit.core.paths import get_cit_home, get_claude_home
 
 
@@ -154,10 +154,17 @@ def _check_lock() -> DiagnosticResult:
             status="ok",
             detail="No lock file (no active session)",
         )
+    held = is_lock_held()
+    if held:
+        return DiagnosticResult(
+            name="Lock",
+            status="warning",
+            detail=f"Lock is currently held by another cit process",
+        )
     return DiagnosticResult(
         name="Lock",
-        status="warning",
-        detail=f"Lock file exists at {lock_path}",
+        status="ok",
+        detail="Lock file exists but is not held",
     )
 
 
