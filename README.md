@@ -78,6 +78,7 @@ No files were changed.
 | `cit config` | Manage global and per-context defaults stored on profiles |
 | `cit stash` | Save and restore temporary context snapshots |
 | `cit log` | Inspect local Claude session usage and estimated cost |
+| `cit doctor` | Run diagnostics on cit state: WAL, Keychain, config, profiles, state, and paths |
 
 ## How it works
 
