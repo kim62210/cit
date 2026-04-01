@@ -7,6 +7,7 @@ from cit.commands.branch import branch
 from cit.commands.checkout import checkout
 from cit.commands.config import config
 from cit.commands.diff import diff_command
+from cit.commands.doctor import doctor
 from cit.commands.log import log_command
 from cit.commands.stash import stash
 from cit.commands.status import status
@@ -63,6 +64,7 @@ main.add_command(config)
 main.add_command(diff_command)
 main.add_command(stash)
 main.add_command(log_command)
+main.add_command(doctor)
 
 
 if __name__ == "__main__":
